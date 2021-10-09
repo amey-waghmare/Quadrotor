@@ -87,15 +87,9 @@ import time
 from quat2euler import quat2euler_angle
 
 ## Mahony
-from ahrs.filters import Mahony
+from mahony_ahrs import Mahony
 from ahrs import Quaternion
-orientation = Mahony(frequency = 100.0, k_P = 4, k_I = 3)
-
-
-## EKF
-from ahrs.filters import EKF
-from ahrs.common.orientation import acc2q
-orientation_EKF = EKF(magnetic_ref = 18.0, frame = 'ENU')
+orientation = Mahony(frequency = 100.0,k_P = 3, k_I = 1.5)
 
 
 
@@ -117,10 +111,7 @@ epochs = 10000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
-Q_EKF = np.zeros((epochs,4))
-a = mpu.readAccelerometerMaster()
-a = [item*9.80665 for item in a]
-Q_EKF[0] = acc2q(a)
+Q_Mad = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
@@ -141,9 +132,9 @@ for t in range(1, epochs):
     #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
     X,Y,Z = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
         
-    Q_EKF[t] = orientation_EKF.update(Q_EKF[t-1], gyr = g, acc = a, mag = m)
+    #Q_Mad[t] = orientation_Mad.updateMARG(Q_Mad[t-1], gyr = g, acc = a, mag = m)
     ## Get angles here    
-    X_EKF, Y_EKF, Z_EKF = quat2euler_angle(Q_EKF[t,0], Q_EKF[t,1], Q_EKF[t,2], Q_EKF[t,3])
+    #X_M, Y_M, Z_M = quat2euler_angle(Q_Mad[t,0], Q_Mad[t,1], Q_Mad[t,2], Q_Mad[t,3])
     #print(X,Y,Z)
     #eul.append([X,Y,Z]) 
         
@@ -156,8 +147,8 @@ for t in range(1, epochs):
     #time.sleep(0.1)
     
     ## Debug
-    #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("PITCH: {:.2f} {:.2f} \t ROLL: {:.2f} {:.2f}\t YAW: {:.2f} {:.2f}".format(X, X_EKF, Y, Y_EKF, Z, Z_EKF))
+    print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
+    #print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
     
 #eul = np.array(eul)
 #np.savetxt("euler_angles.csv", eul, delimiter = ",")
