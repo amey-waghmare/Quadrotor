@@ -17,16 +17,16 @@ import kalman
 
 address = 0x68
 bus = smbus.SMBus(1)
-#imu = MPU9250.MPU9250(bus, address)
-#imu.begin()
+imu = MPU9250.MPU9250(bus, address)
+imu.begin()
 
 sensorfusion = kalman.Kalman()
 
-#imu.readSensor()
-#imu.computeOrientation()
-#sensorfusion.roll = imu.roll
-#sensorfusion.pitch = imu.pitch
-#sensorfusion.yaw = imu.yaw
+imu.readSensor()
+imu.computeOrientation()
+sensorfusion.roll = imu.roll
+sensorfusion.pitch = imu.pitch
+sensorfusion.yaw = imu.yaw
 
 currTime = time.time()
 
@@ -177,7 +177,10 @@ for t in range(1, epochs):
 
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("PITCH: {:.2f} {:.2f} \t ROLL: {:.2f} {:.2f}\t YAW: {:.2f} {:.2f}".format(X, sensorfusion.roll, Y, sensorfusion.pitch, Z, sensorfusion.yaw))
+    #print("PITCH: {:.2f} {:.2f} \t ROLL: {:.2f} {:.2f}\t YAW: {:.2f} {:.2f}".format(X, sensorfusion.roll, Y, sensorfusion.pitch, Z, sensorfusion.yaw))
+    #print("PITCH Error: {:.2f}\t ROLL Error: {:.2f}\t YAW Error: {:.2f}".format(X-sensorfusion.roll, Y-sensorfusion.pitch, Z-sensorfusion.yaw))
+    #print("PITCH {:.2f} {:.2f} {:.2f}\t ROLL {:.2f} {:.2f} {:.2f}\t YAW {:.2f} {:.2f} {:.2f}".format(X, sensorfusion.roll, X - sensorfusion.roll, Y, sensorfusion.pitch, Y - sensorfusion.pitch, Z, sensorfusion.yaw, Z - sensorfusion.yaw))
+    print("YAW: ORTH {:.2f} \t KAL {:.2f}\t Err {:.2f}".format(Z, sensorfusion.yaw, Z-sensorfusion.yaw))    
     time.sleep(0.01)
     
     
