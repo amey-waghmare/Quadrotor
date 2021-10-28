@@ -65,11 +65,11 @@ print("Wait 3 sec")
 esc1 = ESC(ESC1)
 esc2 = ESC(ESC2)
 time.sleep(3)
-print("ESC Calibrated, Now working on IMU")
+print("ESC Activated, Now working on IMU")
 
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from PID import *
 
 PID_PI_P_GAIN = 2.0
@@ -92,13 +92,6 @@ from ahrs import Quaternion
 orientation = Mahony(frequency = 100.0, k_P = 4, k_I = 3)
 
 
-## EKF
-from ahrs.filters import EKF
-from ahrs.common.orientation import acc2q
-orientation_EKF = EKF(magnetic_ref = 18.0, frame = 'ENU')
-
-
-
 ## Initialize MPU
 from mpu9250_jmdev.registers import *
 from mpu9250_jmdev.mpu_9250 import MPU9250
@@ -107,24 +100,21 @@ mpu = MPU9250(address_ak = AK8963_ADDRESS, address_mpu_master = MPU9050_ADDRESS_
 ## Configure the registers and set calibrated biases 
 mpu.configure()
 mpu.calibrateMPU6500()
-mpu.magScale = [1.381642, 0.97435897, 1.02702703]
-mpu.mbias = [18.44951923, 13.66289396, -45.109660220]
+mpu.magScale = [0.9841849, 0.95796329, 1.063773833]
+mpu.mbias = [20.2066163, 11.19475828, -42.909188988]
 
 mpu.configure()
 
-print("Abias {} Gbias {}, MagScale {}, Mbias{} ".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
-epochs = 10000
+print("Abias {} \n Gbias {}\n MagScale {}\n Mbias{}\n\n\n".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
+epochs = 5000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
-Q_EKF = np.zeros((epochs,4))
-a = mpu.readAccelerometerMaster()
-a = [item*9.80665 for item in a]
-Q_EKF[0] = acc2q(a)
-eul = []
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
-err = []
+angles = []
+pwm_pitch = []
+
 
 for t in range(1, epochs):
     ## Gives list
@@ -141,30 +131,56 @@ for t in range(1, epochs):
     #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
     X,Y,Z = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
         
-    Q_EKF[t] = orientation_EKF.update(Q_EKF[t-1], gyr = g, acc = a, mag = m)
-    ## Get angles here    
-    X_EKF, Y_EKF, Z_EKF = quat2euler_angle(Q_EKF[t,0], Q_EKF[t,1], Q_EKF[t,2], Q_EKF[t,3])
-    #print(X,Y,Z)
-    #eul.append([X,Y,Z]) 
         
     p_out, i_out, d_out = pa_pid.Compute(X, 0, dt_angles)
     error = p_out + i_out + d_out
-    err.append(error)
     #print(error)    
-    pwm_to_give = hover_pwm + error
-    esc1.set(int(round(pwm_to_give)))    
+    pwm_to_give = int(round(hover_pwm + error))
+    esc1.set(pwm_to_give)    
     #time.sleep(0.1)
-    
+    pwm_pitch.append([pwm_to_give,X])
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("PITCH: {:.2f} {:.2f} \t ROLL: {:.2f} {:.2f}\t YAW: {:.2f} {:.2f}".format(X, X_EKF, Y, Y_EKF, Z, Z_EKF))
-    
-#eul = np.array(eul)
-#np.savetxt("euler_angles.csv", eul, delimiter = ",")
-err = np.array(err)
-np.savetxt("err.csv", err, delimiter = ",")
-#plt.plot(eul)
+    #print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
+    print("PWM: {:.2f}\t PITCH: {:.2f} \t ROLL: {:.2f}".format(pwm_to_give, X,Y))    
+    angles.append([X,Y,Z])
 
+
+#angles = np.array(angles)
+
+#fig, axs = plt.subplots(3)
+#fig.suptitle("Euler angles")
+#axs[0].plot(angles[:,0])
+#axs[0].grid()
+#axs[0].legend("Pitch")
+#axs[0].set_ylabel("Pitch (degree)")
+#axs[1].plot(angles[:,1])
+#axs[1].legend("Roll")
+#axs[1].set_ylabel("Roll (degree)")
+#axs[1].grid()
+#axs[2].plot(angles[:,2])
+#axs[2].legend("Yaw")
+#axs[2].set_ylabel("Yaw (degree)")
+
+pwm_pitch = np.array(pwm_pitch)
+fig2 = plt.figure()
+fig2.suptitle("Pitch angle control")
+ax1 = fig2.add_subplot(211)
+ax1.plot(pwm_pitch[:,0])
+ax1.grid()
+ax1.set_label("PWM")
+ax1.set_ylabel("PWM")
+ax2 = fig2.add_subplot(212)
+ax2.plot(pwm_pitch[:,1])
+ax2.grid()
+ax2.set_label("$\phi$")
+ax2.set_ylabel("$\phi$")
+
+
+
+
+plt.legend()
+plt.show()
 
 esc1.kill_esc()
 esc2.kill_esc()

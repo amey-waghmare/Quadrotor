@@ -168,7 +168,7 @@ class Mahony:
             h = R@m
             v_m = R.T@np.array([-np.linalg.norm([h[0], h[1]]), 0.0, h[2]])
             v_m /= np.linalg.norm(v_m)
-            # ECF
+            
             omega_mes = np.cross(a, v_a) + np.cross(m, v_m) # Cost function (eqs. 32c and 48a)
             self.eInt = self.eInt + omega_mes * self.Dt             # Estimated Gyro bias (eq. 48c)
             

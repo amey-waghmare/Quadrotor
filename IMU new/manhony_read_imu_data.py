@@ -69,7 +69,7 @@ print("ESC Calibrated, Now working on IMU")
 
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from PID import *
 
 PID_PI_P_GAIN = 2.0
@@ -107,7 +107,7 @@ mpu.mbias = [18.44951923, 13.66289396, -45.109660220]
 mpu.configure()
 
 print("Abias {} Gbias {}, MagScale {}, Mbias{} ".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
-epochs = 10000
+epochs = 8000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
@@ -116,6 +116,8 @@ eul = []
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
 err = []
+
+angles = []
 
 for t in range(1, epochs):
     ## Gives list
@@ -131,12 +133,7 @@ for t in range(1, epochs):
     Q[t] = orientation.updateMARG(Q[t-1], gyr = g, acc = a, mag = m)    
     #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
     X,Y,Z = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
-        
-    #Q_Mad[t] = orientation_Mad.updateMARG(Q_Mad[t-1], gyr = g, acc = a, mag = m)
-    ## Get angles here    
-    #X_M, Y_M, Z_M = quat2euler_angle(Q_Mad[t,0], Q_Mad[t,1], Q_Mad[t,2], Q_Mad[t,3])
-    #print(X,Y,Z)
-    #eul.append([X,Y,Z]) 
+    
         
     p_out, i_out, d_out = pa_pid.Compute(X, 0, dt_angles)
     error = p_out + i_out + d_out
@@ -147,17 +144,37 @@ for t in range(1, epochs):
     #time.sleep(0.1)
     
     ## Debug
-    print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    #print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
-    
-#eul = np.array(eul)
-#np.savetxt("euler_angles.csv", eul, delimiter = ",")
-err = np.array(err)
-np.savetxt("err.csv", err, delimiter = ",")
-#plt.plot(eul)
+    #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
+    print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
+    angles.append([X,Y,Z])
 
+angles = np.array(angles)
+
+fig, axs = plt.subplots(3)
+fig.suptitle("Euler angles")
+axs[0].plot(angles[:,0])
+axs[0].grid()
+axs[0].legend("Pitch")
+axs[0].set_ylabel("Pitch (degree)")
+axs[1].plot(angles[:,1])
+axs[1].legend("Roll")
+axs[1].set_ylabel("Roll (degree)")
+axs[1].grid()
+axs[2].plot(angles[:,2])
+axs[2].legend("Yaw")
+axs[2].set_ylabel("Yaw (degree)")
+
+
+
+#plt.plot(angles[:,0], label = "Pitch $\phi$")
+#plt.plot(angles[:,1], label = "Roll $ \theta $")
+#plt.plot(angles[:,2], label = "Yaw $\psi$")
+#plt.title("Euler Angles")
+#plt.ylabel("$\phi$, $ \theta $, $\psi$ (degree)")
+plt.grid()
+plt.legend()
+plt.show()
 
 esc1.kill_esc()
 esc2.kill_esc()
 pi.stop()
-        

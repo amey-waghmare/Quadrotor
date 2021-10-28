@@ -68,25 +68,35 @@ esc2 = ESC(ESC2)
 time.sleep(3)
 print("ESC Calibrated, Now start commands")
 
-
-
-
-
+esc1_pwm = 1300
+esc2_pwm = 1300
 while True:
     data, addr = sock.recvfrom(1024)
     ## The above data comes in bytes, need to convert it into string
     data = data.decode("utf-8")
 
     if data == "device1on":
-        esc1.set(1300)
+        esc1.set(esc1_pwm)
     elif data == "device1off":
         esc1.set(min_value)
     elif data == "device2on":
-        esc2.set(1300)
+        esc2.set(esc2_pwm)
     elif data == "device2off":
         esc2.set(min_value)
-
-
+    
+    elif data == "d1a":
+        esc1_pwm = esc1_pwm + 50
+        esc1.set(esc1_pwm)
+    elif data == "d1s":
+        esc1_pwm = esc1_pwm - 50
+        esc1.set(esc1_pwm)
+    elif data == "d2a":
+        esc2_pwm = esc2_pwm + 50
+        esc2.set(esc2_pwm)
+    elif data == "d2s":
+        esc2_pwm = esc2_pwm - 50
+        esc2.set(esc2_pwm)
+    
     elif data == "device4off":
         esc1.kill_esc()
         esc2.kill_esc()
