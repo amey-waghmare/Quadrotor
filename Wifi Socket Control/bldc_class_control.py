@@ -1,4 +1,4 @@
-
+## This is the wifi code
 
 import os
 os.system("sudo pigpiod")
@@ -85,16 +85,16 @@ while True:
         esc2.set(min_value)
     
     elif data == "d1a":
-        esc1_pwm = esc1_pwm + 50
+        esc1_pwm = 1700 if esc1_pwm >= 1700 else esc1_pwm + 50
         esc1.set(esc1_pwm)
     elif data == "d1s":
-        esc1_pwm = esc1_pwm - 50
+        esc1_pwm = 1199 if esc1_pwm <= 1199 else esc1_pwm - 50
         esc1.set(esc1_pwm)
     elif data == "d2a":
-        esc2_pwm = esc2_pwm + 50
+        esc2_pwm = 1700 if esc2_pwm >=1700 else esc2_pwm + 50
         esc2.set(esc2_pwm)
     elif data == "d2s":
-        esc2_pwm = esc2_pwm - 50
+        esc2_pwm = 1199 if esc2_pwm <= 1199 else esc2_pwm - 50
         esc2.set(esc2_pwm)
     
     elif data == "device4off":
@@ -143,3 +143,7 @@ while True:
 #esc1.kill_esc()
 #esc2.kill_esc()
 #pi.stop()
+
+
+
+## I was here

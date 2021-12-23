@@ -93,7 +93,7 @@ print("ESC Calibrated, Now working on IMU")
 
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from PID import *
 
 PID_PI_P_GAIN = 2.0
@@ -111,11 +111,9 @@ import time
 from quat2euler import quat2euler_angle
 
 ## Mahony
-from ahrs.filters import Mahony
+from mahony_ahrs import Mahony
 from ahrs import Quaternion
-orientation = Mahony(frequency = 100.0, k_P = 4, k_I = 3)
-
-
+orientation = Mahony(frequency = 100.0, k_P = 6, k_I = 2)
 
 ## Initialize MPU
 from mpu9250_jmdev.registers import *
@@ -131,13 +129,12 @@ mpu.mbias = [18.44951923, 13.66289396, -45.109660220]
 mpu.configure()
 
 print("Abias {} Gbias {}, MagScale {}, Mbias{} ".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
-epochs = 10000
+epochs = 2000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
-eul = []
 
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
-err = []
+ang = []
 
 for t in range(1, epochs):
     ## Gives list
@@ -151,16 +148,7 @@ for t in range(1, epochs):
     #m = [item for item in m]    
         
     Q[t] = orientation.updateMARG(Q[t-1], gyr = g, acc = a, mag = m)    
-    #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
     X,Y,Z = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
-            
-    p_out, i_out, d_out = pa_pid.Compute(X, 0, dt_angles)
-    error = p_out + i_out + d_out
-    err.append(error)
-    #print(error)    
-    pwm_to_give = hover_pwm + error
-    esc1.set(int(round(pwm_to_give)))    
-    #time.sleep(0.1)
     
     #### KALMAN ####
     #imu.readSensor()
@@ -170,26 +158,48 @@ for t in range(1, epochs):
     currTime = newTime
     
     sensorfusion.computeAndUpdateRollPitchYaw(a[0], a[1], a[2], g[0], g[1], g[2], m[0], m[1], m[2], 0.01)
-
-
-
     
-
+    ang.append([X, sensorfusion.roll, Y, sensorfusion.pitch,Z , sensorfusion.yaw])
+        
+    #p_out, i_out, d_out = pa_pid.Compute(X, 0, dt_angles)
+    #error = p_out + i_out + d_out
+    #err.append(error)
+    #print(error)    
+    #pwm_to_give = hover_pwm + error
+    #esc1.set(int(round(pwm_to_give)))    
+    #time.sleep(0.1)
+    
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
     #print("PITCH: {:.2f} {:.2f} \t ROLL: {:.2f} {:.2f}\t YAW: {:.2f} {:.2f}".format(X, sensorfusion.roll, Y, sensorfusion.pitch, Z, sensorfusion.yaw))
     #print("PITCH Error: {:.2f}\t ROLL Error: {:.2f}\t YAW Error: {:.2f}".format(X-sensorfusion.roll, Y-sensorfusion.pitch, Z-sensorfusion.yaw))
-    #print("PITCH {:.2f} {:.2f} {:.2f}\t ROLL {:.2f} {:.2f} {:.2f}\t YAW {:.2f} {:.2f} {:.2f}".format(X, sensorfusion.roll, X - sensorfusion.roll, Y, sensorfusion.pitch, Y - sensorfusion.pitch, Z, sensorfusion.yaw, Z - sensorfusion.yaw))
+    #print("PITCH {:.2f} {:.2f} {:.2f}\t ROLL {:.2f} {:.2f} {:.2f}".format(X, sensorfusion.roll, X - sensorfusion.roll, Y, sensorfusion.pitch, Y - sensorfusion.pitch))
     print("YAW: ORTH {:.2f} \t KAL {:.2f}\t Err {:.2f}".format(Z, sensorfusion.yaw, Z-sensorfusion.yaw))    
     time.sleep(0.01)
     
     
-#eul = np.array(eul)
-#np.savetxt("euler_angles.csv", eul, delimiter = ",")
-#err = np.array(err)
-#np.savetxt("err.csv", err, delimiter = ",")
-#plt.plot(eul)
+ang = np.array(ang)
 
+fig, axs = plt.subplots(3)
+fig.suptitle("Error between Mahony and Kalman Filters")
+axs[0].plot(ang[:,0], label = "Mahony")
+axs[0].plot(ang[:,1], label = "Kalman")
+axs[0].grid()
+axs[0].legend("MK")
+axs[0].set_ylabel("Pitch (degree)")
+axs[1].plot(ang[:,2], label = "Mahony")
+axs[1].plot(ang[:,3], label = "Kalman")
+axs[1].legend("MK")
+axs[1].set_ylabel("Roll (degree)")
+axs[1].grid()
+axs[2].plot(ang[:,4], label = "Mahony")
+axs[2].plot(ang[:,5], label = "Kalman")
+#axs[2].legend("Yaw")
+axs[2].set_ylabel("Yaw (degree)")
+axs[2].grid()
+
+plt.legend()
+plt.show()
 
 esc1.kill_esc()
 esc2.kill_esc()
