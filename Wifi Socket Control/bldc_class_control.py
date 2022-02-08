@@ -13,7 +13,7 @@ time.sleep(1)
 import socket 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 UDP_IP = "0.0.0.0"
-UDP_PORT = 5050
+UDP_PORT = 5051
 sock.bind((UDP_IP,UDP_PORT))
 ## Enter above UDP_PORT in mobile app
 time.sleep(1)
@@ -74,6 +74,7 @@ while True:
     data, addr = sock.recvfrom(1024)
     ## The above data comes in bytes, need to convert it into string
     data = data.decode("utf-8")
+    print(data)
 
     if data == "device1on":
         esc1.set(esc1_pwm)

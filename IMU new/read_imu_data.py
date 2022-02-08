@@ -89,7 +89,7 @@ from quat2euler import quat2euler_angle
 ## Mahony
 from ahrs.filters import Mahony
 from ahrs import Quaternion
-orientation = Mahony(frequency = 100.0, k_P = 4, k_I = 3)
+orientation = Mahony(frequency = 100.0, k_P = 7, k_I = 3)
 
 
 ## Initialize MPU
@@ -100,8 +100,8 @@ mpu = MPU9250(address_ak = AK8963_ADDRESS, address_mpu_master = MPU9050_ADDRESS_
 ## Configure the registers and set calibrated biases 
 mpu.configure()
 mpu.calibrateMPU6500()
-mpu.magScale = [0.9841849, 0.95796329, 1.063773833]
-mpu.mbias = [20.2066163, 11.19475828, -42.909188988]
+mpu.magScale = [0.9910514541387024, 0.9736263736263736, 1.0374707259953162]
+mpu.mbias = [-5.534855769230769, 37.99165998931623, -46.97159741300366]
 
 mpu.configure()
 
@@ -142,39 +142,39 @@ for t in range(1, epochs):
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
     #print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
-    print("PWM: {:.2f}\t PITCH: {:.2f} \t ROLL: {:.2f}".format(pwm_to_give, X,Y))    
+    print("PWM: {:.2f}\t PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f}".format(pwm_to_give, X,Y,Z))    
     angles.append([X,Y,Z])
 
 
-#angles = np.array(angles)
+angles = np.array(angles)
 
-#fig, axs = plt.subplots(3)
-#fig.suptitle("Euler angles")
-#axs[0].plot(angles[:,0])
-#axs[0].grid()
-#axs[0].legend("Pitch")
-#axs[0].set_ylabel("Pitch (degree)")
-#axs[1].plot(angles[:,1])
-#axs[1].legend("Roll")
-#axs[1].set_ylabel("Roll (degree)")
-#axs[1].grid()
-#axs[2].plot(angles[:,2])
-#axs[2].legend("Yaw")
-#axs[2].set_ylabel("Yaw (degree)")
+fig, axs = plt.subplots(3)
+fig.suptitle("Euler angles")
+axs[0].plot(angles[:,0])
+axs[0].grid()
+axs[0].legend("Pitch")
+axs[0].set_ylabel("Pitch (degree)")
+axs[1].plot(angles[:,1])
+axs[1].legend("Roll")
+axs[1].set_ylabel("Roll (degree)")
+axs[1].grid()
+axs[2].plot(angles[:,2])
+axs[2].legend("Yaw")
+axs[2].set_ylabel("Yaw (degree)")
 
-pwm_pitch = np.array(pwm_pitch)
-fig2 = plt.figure()
-fig2.suptitle("Pitch angle control")
-ax1 = fig2.add_subplot(211)
-ax1.plot(pwm_pitch[:,0])
-ax1.grid()
-ax1.set_label("PWM")
-ax1.set_ylabel("PWM")
-ax2 = fig2.add_subplot(212)
-ax2.plot(pwm_pitch[:,1])
-ax2.grid()
-ax2.set_label("$\phi$")
-ax2.set_ylabel("$\phi$")
+#pwm_pitch = np.array(pwm_pitch)
+#fig2 = plt.figure()
+#fig2.suptitle("Pitch angle control")
+#ax1 = fig2.add_subplot(211)
+#ax1.plot(pwm_pitch[:,0])
+#ax1.grid()
+#ax1.set_label("PWM")
+#ax1.set_ylabel("PWM")
+#ax2 = fig2.add_subplot(212)
+#ax2.plot(pwm_pitch[:,1])
+#ax2.grid()
+#ax2.set_label("$\phi$")
+#ax2.set_ylabel("$\phi$")
 
 
 

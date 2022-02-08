@@ -33,9 +33,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PID import *
 
-PID_PI_P_GAIN = 2.0
-PID_PI_I_GAIN = 0.0
-PID_PI_D_GAIN = 0.0
 
 dt_angles = 0.01
 
@@ -48,9 +45,11 @@ import time
 from quat2euler import quat2euler_angle
 
 ## Mahony
-from mahony_ahrs import Mahony
+from mahony_ahrs import Mahony    ## Updated library with corrected Integrator Implementation
 from ahrs import Quaternion
-orientation = Mahony(frequency = 100.0,k_P = 3, k_I = 1.5)
+## Without disturbance
+#orientation = Mahony(frequency = 100.0,k_P = 45, k_I = 30)
+orientation = Mahony(frequency = 100.0,k_P = 7, k_I = 5) ### Working great for steady state
 
 
 
@@ -62,8 +61,13 @@ mpu = MPU9250(address_ak = AK8963_ADDRESS, address_mpu_master = MPU9050_ADDRESS_
 ## Configure the registers and set calibrated biases 
 mpu.configure()
 mpu.calibrateMPU6500()
-mpu.magScale = [1.381642, 0.97435897, 1.02702703]
-mpu.mbias = [18.44951923, 13.66289396, -45.109660220]
+### Values in Powai
+mpu.magScale = [1.0843706777316735, 0.9042675893886966, 1.0288713910761154]
+mpu.mbias = [-5.534855769230769, 37.99165998931623, -46.97159741300366]
+
+### Values in Nagpur
+#mpu.magScale = [1.381642, 0.97435897, 1.02702703]
+#mpu.mbias = [18.44951923, 13.66289396, -45.109660220]
 
 mpu.configure()
 
@@ -72,10 +76,12 @@ epochs = 8000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
-Q_Mad = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
-eul = []
+PID_PI_P_GAIN = 0.6
+PID_PI_I_GAIN = 0.30
+PID_PI_D_GAIN = 0.01
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
+
 err = []
 
 angles = []
@@ -93,41 +99,41 @@ for t in range(1, epochs):
         
     Q[t] = orientation.updateMARG(Q[t-1], gyr = g, acc = a, mag = m)    
     #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
-    X,Y,Z = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
+    meas_pitch, meas_roll, meas_yaw = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
     
         
-    p_out, i_out, d_out = pa_pid.Compute(X, 0, dt_angles)
+    p_out, i_out, d_out = pa_pid.Compute(meas_pitch, 0, dt_angles)
     error = p_out + i_out + d_out
     err.append(error)
-    #print(error)    
+     
     pwm_to_give = hover_pwm + error
     esc1.set(int(round(pwm_to_give)))    
     #time.sleep(0.1)
     
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("PITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(X, Y, Z))
-    angles.append([X,Y,Z])
+    print("PWM: {}\tPITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(pwm_to_give, meas_pitch, meas_roll, meas_yaw))
+    angles.append([meas_pitch, meas_roll, meas_yaw])
 
 angles = np.array(angles)
 
 fig, axs = plt.subplots(3)
 fig.suptitle("Euler angles")
-axs[0].plot(angles[:,0])
+axs[0].plot(angles[1000:,0])
 axs[0].grid()
 axs[0].legend("Pitch")
 axs[0].set_ylabel("Pitch (degree)")
-axs[1].plot(angles[:,1])
+axs[1].plot(angles[1000:,1])
 axs[1].legend("Roll")
 axs[1].set_ylabel("Roll (degree)")
 axs[1].grid()
-axs[2].plot(angles[:,2])
+axs[2].plot(angles[1000:,2])
 axs[2].legend("Yaw")
 axs[2].set_ylabel("Yaw (degree)")
 
-
 plt.grid()
 plt.legend()
+plt.savefig("latest_results.png")
 plt.show()
 
 esc1.kill_esc()
