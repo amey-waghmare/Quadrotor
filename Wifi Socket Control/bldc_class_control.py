@@ -70,6 +70,8 @@ print("ESC Calibrated, Now start commands")
 
 esc1_pwm = 1300
 esc2_pwm = 1300
+
+step_change = 5
 while True:
     data, addr = sock.recvfrom(1024)
     ## The above data comes in bytes, need to convert it into string
@@ -86,16 +88,16 @@ while True:
         esc2.set(min_value)
     
     elif data == "d1a":
-        esc1_pwm = 1700 if esc1_pwm >= 1700 else esc1_pwm + 50
+        esc1_pwm = 1700 if esc1_pwm >= 1700 else esc1_pwm + step_change
         esc1.set(esc1_pwm)
     elif data == "d1s":
-        esc1_pwm = 1199 if esc1_pwm <= 1199 else esc1_pwm - 50
+        esc1_pwm = 1199 if esc1_pwm <= 1199 else esc1_pwm - step_change
         esc1.set(esc1_pwm)
     elif data == "d2a":
-        esc2_pwm = 1700 if esc2_pwm >=1700 else esc2_pwm + 50
+        esc2_pwm = 1700 if esc2_pwm >=1700 else esc2_pwm + step_change
         esc2.set(esc2_pwm)
     elif data == "d2s":
-        esc2_pwm = 1199 if esc2_pwm <= 1199 else esc2_pwm - 50
+        esc2_pwm = 1199 if esc2_pwm <= 1199 else esc2_pwm - step_change
         esc2.set(esc2_pwm)
     
     elif data == "device4off":

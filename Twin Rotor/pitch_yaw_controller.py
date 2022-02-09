@@ -76,9 +76,9 @@ epochs = 8000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
-PID_PI_P_GAIN = 0.6
-PID_PI_I_GAIN = 0.30
-PID_PI_D_GAIN = 0.01
+PID_PI_P_GAIN = 0.8
+PID_PI_I_GAIN = 0
+PID_PI_D_GAIN = 0.00
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
 
@@ -112,7 +112,7 @@ for t in range(1, epochs):
     
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("PWM: {}\tPITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(pwm_to_give, meas_pitch, meas_roll, meas_yaw))
+    print("PWM: {}\tERR: {}\tPITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(pwm_to_give,error, meas_pitch, meas_roll, meas_yaw))
     angles.append([meas_pitch, meas_roll, meas_yaw])
 
 angles = np.array(angles)
