@@ -7,24 +7,35 @@ class PID:
         self.p_gain = p_gain
         self.i_gain = i_gain
         self.d_gain = d_gain
+        
+
         self.i_error = 0.0
+        self.windup_guard = 10.0
 
-    def Error(self, input, target):
-        return (target - input)
+    def Error(self, feedback, target):
+        return (target - feedback)
 
 
-    def Compute(self, input, target, dt):
-        error = self.Error(input, target)
+    def Compute(self, feedback, target, dt):
+        error = self.Error(feedback, target)
 
         p_error = error
 
-        self.i_error += (error + self.last_error) * dt
-        i_error = self.i_error
+        
+        
 
+        self.i_error += (error) * dt
+        ## Integrator Windup
+        if self.i_error < -self.windup_guard:
+            self.i_error = -self.windup_guard
+        elif self.i_error > self.windup_guard:
+            self.i_error = self.windup_guard
+        
+        
         d_error = (error - self.last_error) / dt
 
         p_output = self.p_gain * p_error
-        i_output = self.i_gain * i_error
+        i_output = self.i_gain * self.i_error
         d_output = self.d_gain * d_error
         
         # Store last error for integral error and differential error calculation
@@ -38,14 +49,14 @@ class PID:
 # Subclass of PID
 class YAW_PID(PID):
 
-    def Error(self, input, target):
+    def Error(self, feedback, target):
         #-------------------------------------------------------------------------------------------
         # target and input are in the 0 - 2 pi range.  This is asserted. Results are in the +/- pi
         # range to make sure we spin the shorted way.
         #-------------------------------------------------------------------------------------------
-        assert (abs(input) <= math.pi), "yaw input out of range %f" % math.degrees(input)
+        assert (abs(feedback) <= math.pi), "yaw input out of range %f" % math.degrees(feedback)
         assert (abs(target) <= math.pi), "yaw target out of range %f" % math.degrees(target)
-        error = ((target - input) + math.pi) % (2 * math.pi) - math.pi
+        error = ((target - feedback) + math.pi) % (2 * math.pi) - math.pi
         return error
 
 
