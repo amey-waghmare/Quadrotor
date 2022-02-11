@@ -72,15 +72,15 @@ mpu.mbias = [-5.534855769230769, 37.99165998931623, -46.97159741300366]
 mpu.configure()
 
 print("Abias {} Gbias {}, MagScale {}, Mbias{} ".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
-epochs = 8000
+epochs = 4000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
 pwm_to_give = hover_pwm
 esc1.set(pwm_to_give)
 
-PID_PI_P_GAIN = 1.5
-PID_PI_I_GAIN = 1
+PID_PI_P_GAIN = 1
+PID_PI_I_GAIN = 0
 PID_PI_D_GAIN = 0.00
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
@@ -105,20 +105,22 @@ for t in range(1, epochs):
     meas_pitch, meas_roll, meas_yaw = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
     
         
-    p_out, i_out, d_out = pa_pid.Compute(meas_pitch, 10, dt_angles)
+    p_out, i_out, d_out = pa_pid.Compute(meas_pitch, 0, dt_angles)
     error = p_out + i_out + d_out
     err.append(error)
      
-    pwm_to_give = hover_pwm + int(round(error))
+    pwm_to_give = hover_pwm #+ int(round(error))
     esc1.set(pwm_to_give)
     #time.sleep(0.1)
     
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    print("Frequency: {}\tPWM: {}\tERR: {:.2f}\tPITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(pi.get_PWM_frequency(27), pwm_to_give,error, meas_pitch, meas_roll, meas_yaw))
+    print("Frequency: {}\tPWM: {}\tERR: {:.2f}\tPITCH: {:.2f}  ".format(pi.get_PWM_frequency(27), pwm_to_give,error, meas_pitch))
     angles.append([meas_pitch, meas_roll, meas_yaw])
 
 angles = np.array(angles)
+
+print("Average Pitch:", np.mean(angles[1000:,0]))
 
 fig, axs = plt.subplots(3)
 fig.suptitle("Euler angles")

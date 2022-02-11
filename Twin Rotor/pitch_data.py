@@ -9,7 +9,7 @@ time.sleep(1)
 import socket 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 UDP_IP = "0.0.0.0"
-UDP_PORT = 5051
+UDP_PORT = 5050
 sock.bind((UDP_IP,UDP_PORT))
 ## Enter above UDP_PORT in mobile app
 time.sleep(1)
@@ -72,24 +72,23 @@ mpu.mbias = [-5.534855769230769, 37.99165998931623, -46.97159741300366]
 mpu.configure()
 
 print("Abias {} Gbias {}, MagScale {}, Mbias{} ".format(mpu.abias, mpu.gbias, mpu.magScale, mpu.mbias))
-epochs = 8000
+epochs = 20000
 Q = np.tile([1.0, 0.0,0.0,0.0], (epochs,1))
 eul = []
 
-PID_PI_P_GAIN = 2
-PID_PI_I_GAIN = 0.0
-PID_PI_D_GAIN = 0.0
+pwm_to_give = hover_pwm
+esc1.set(pwm_to_give)
+
+PID_PI_P_GAIN = 1
+PID_PI_I_GAIN = 0
+PID_PI_D_GAIN = 0.00
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
 
 err = []
 
 angles = []
-
-esc1_pwm = 1300
-esc2_pwm = 1300
-step_change = 10
-
+pitch_dataset = []
 for t in range(1, epochs):
     ## Gives list
     a = mpu.readAccelerometerMaster()
@@ -100,56 +99,34 @@ for t in range(1, epochs):
     
     m = mpu.readMagnetometerMaster()
     #m = [item for item in m]    
-
-    ## Wifi Stuff
-    data, addr = sock.recvfrom(1024)
-    data = data.decode("utf-8")
-    if data == "device1on":
-        esc1.set(esc1_pwm)
-    elif data == "device1off":
-        esc1.set(min_value)
-    elif data == "device2on":
-        esc2.set(esc2_pwm)
-    elif data == "device2off":
-        esc2.set(min_value)
-    
-    elif data == "d1a":
-        esc1_pwm = 1700 if esc1_pwm >= 1700 else esc1_pwm + step_change
-        esc1.set(esc1_pwm)
-    elif data == "d1s":
-        esc1_pwm = 1199 if esc1_pwm <= 1199 else esc1_pwm - step_change
-        esc1.set(esc1_pwm)
-    elif data == "d2a":
-        esc2_pwm = 1700 if esc2_pwm >=1700 else esc2_pwm + step_change
-        esc2.set(esc2_pwm)
-    elif data == "d2s":
-        esc2_pwm = 1199 if esc2_pwm <= 1199 else esc2_pwm - step_change
-        esc2.set(esc2_pwm)
-    
-    
-    ##
         
     Q[t] = orientation.updateMARG(Q[t-1], gyr = g, acc = a, mag = m)    
     #Q[t] = orientation.updateIMU(Q[t-1], gyr = g, acc = a)        
     meas_pitch, meas_roll, meas_yaw = quat2euler_angle(Q[t,0], Q[t,1], Q[t,2], Q[t,3])
     
         
-    p_out, i_out, d_out = pa_pid.Compute(meas_pitch, 8, dt_angles)
+    p_out, i_out, d_out = pa_pid.Compute(meas_pitch, 0, dt_angles)
     error = p_out + i_out + d_out
     err.append(error)
-     
     
-    print("PWM: {}\tErr:{:.2f}\tPitch: {:.2f}\t".format(esc1_pwm, error, meas_pitch))
-    #pwm_to_give = hover_pwm + int(round(error))
-    #esc1.set(pwm_to_give)    
+    if t % 1000 == 0:
+        pwm_to_give = pwm_to_give + 5
+        print(pwm_to_give, meas_pitch)
+        
+    pitch_dataset.append([pwm_to_give,meas_pitch])
+    esc1.set(pwm_to_give)
     #time.sleep(0.1)
     
     ## Debug
     #print("PWM: {:.2f}\t error:{:.2f} PITCH: {:.2f}\t ROLL: {:.2f}\t YAW: {:.2f}".format(pwm_to_give, error, X, Y, Z))
-    #print("PWM: {}\tERR: {}\tPITCH: {:.2f} \t ROLL: {:.2f} \t YAW: {:.2f} ".format(pwm_to_give,error, meas_pitch, meas_roll, meas_yaw))
+    #print("Frequency: {}\tPWM: {}\tERR: {:.2f}\tPITCH: {:.2f}  ".format(pi.get_PWM_frequency(27), pwm_to_give,error, meas_pitch))
     angles.append([meas_pitch, meas_roll, meas_yaw])
 
 angles = np.array(angles)
+pitch_dataset = np.array(pitch_dataset)
+np.savetxt("pitch_dataset3.csv", pitch_dataset, delimiter = ",")
+
+print("Average Pitch:", np.mean(angles[1000:,0]))
 
 fig, axs = plt.subplots(3)
 fig.suptitle("Euler angles")
