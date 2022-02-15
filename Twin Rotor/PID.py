@@ -10,7 +10,7 @@ class PID:
         
 
         self.i_error = 0.0
-        self.windup_guard = 10.0
+        self.windup_guard = 15.0
 
     def Error(self, feedback, target):
         return (target - feedback)
@@ -39,8 +39,8 @@ class PID:
         d_output = self.d_gain * d_error
         
         # Store last error for integral error and differential error calculation
-        error = p_output + i_output + d_output
-        self.last_error = error
+        #error = p_output + i_output + d_output
+        self.last_error = p_error
         
         # Return the output, which has been tuned to be the increment / decrement in ESC PWM
         return p_output, i_output, d_output

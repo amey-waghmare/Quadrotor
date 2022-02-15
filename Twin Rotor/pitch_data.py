@@ -110,7 +110,7 @@ for t in range(1, epochs):
     err.append(error)
     
     if t % 1000 == 0:
-        pwm_to_give = pwm_to_give + 5
+        pwm_to_give = pwm_to_give - 5
         print(pwm_to_give, meas_pitch)
         
     pitch_dataset.append([pwm_to_give,meas_pitch])
