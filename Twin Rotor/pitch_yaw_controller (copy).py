@@ -79,11 +79,11 @@ eul = []
 
 pwm_to_give = hover_pwm
 esc1.set(pwm_to_give)
-goal_pitch = 10
+goal_pitch = 13
 
 PID_PI_P_GAIN = 0.9
-PID_PI_I_GAIN = 1.8
-PID_PI_D_GAIN = 0
+PID_PI_I_GAIN = 0.6
+PID_PI_D_GAIN = 0.2
 
 pa_pid = PID(PID_PI_P_GAIN, PID_PI_I_GAIN, PID_PI_D_GAIN)
 
